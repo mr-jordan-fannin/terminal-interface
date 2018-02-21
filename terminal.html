@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta content="text/html">
+    <meta charset="utf-8">
+    <style>
+        @font-face {
+            font-family: "MorePerfectDOSVGA";
+            src: local(MorePerfectDOSVGA);
+        }
+        html {
+            background-color: black;
+            color: #0F0;
+            font-family: "MorePerfectDOSVGA", Arial, sans-serif;
+            font-size: 4vh;
+        }
+        div {
+            word-wrap: break-word;
+        }
+    </style>
+    <title>TERMINAL</title>
+</head>
+
+<body>
+<div id="display"></div>
+</body>
+
+<script type="application/javascript" language="javascript">
+
+    // DISPLAY COMPONENTS
+    var row = 0;
+    var column = 0;
+    var command = '';
+    const fontColor = "rgb(0, 255, 0)";
+    const displayColor = "rgb(0, 0, 0)";
+    const rate = 500;
+    const wait = ['-','\\','|','/'];
+
+
+    // SETUP
+    clear();
+    blinking();
+
+    // LOOPS
+    window.addEventListener('keypress', function(event) {
+        keyboard(event);
+    });
+
+    // STARTING CURSOR
+    function start() {
+        command = "";
+        column = 0;
+    }
+
+    // CURSOR
+    function cursor() {
+        return '<span id="cursor">█</span>';
+    }
+
+    // BLINKING ANIMATION
+    function blinking() {
+        setInterval(function () {
+            if (document.getElementById('cursor')) {
+                if (document.getElementById('cursor').style.color === displayColor) {
+                    document.getElementById('cursor').style.color = fontColor;
+                } else {
+                    document.getElementById('cursor').style.color = displayColor;
+                }
+            }
+        }, rate);
+    }
+
+    // ENTER COMMANDS
+    function enter() {
+        switch (command) {
+            case 'CLEAR':
+                clear();
+                break;
+            case 'HELP':
+                help();
+                break;
+            case 'WAIT':
+                waiter();
+                break;
+            default:
+                post();
+                break;
+        }
+        document.getElementById('line' + row).scrollIntoView(false);
+    }
+
+    // CLEAR DISPLAY
+    function clear() {
+        document.getElementById('display').innerHTML = '<div id="line0"></div>';
+        document.getElementById('line0').innerHTML = cursor();
+        row = 0;
+        start();
+    }
+
+    // HELP COMMAND
+    function help() {
+        row++;
+        document.getElementById('display').innerHTML += '<div id="line' + row + '">HELP YOURSELF.</div>';
+        post();
+    }
+
+    // POST TEXT
+    function post() {
+        row++;
+        document.getElementById('display').innerHTML += '<div id="line' + row + '"></div>';
+        start();
+        draw();
+        placeCursor();
+    }
+
+    // DRAW ROW
+    function draw() {
+        document.getElementById('line' + row).innerHTML = command;
+    }
+
+    // PLACE CURSOR
+    function placeCursor() {
+        var newLine = command.slice(0, column) + cursor();
+        var displayView = document.getElementById('display');
+        document.getElementById('line' + row).innerHTML = newLine + command.slice(column,command.length);
+        displayView.scrollTop = displayView.scrollHeight;
+    }
+
+    // MAIN EVENT LOOP
+    function keyboard(event) {
+        switch (event.keyCode) {
+            case 8:     // backspace key
+                if (command.length > 0) {
+                    command = command.substring(0, command.length - 1);
+                }
+                draw();
+                break;
+            case 37:    // left arrow key
+                if (column > 0) {
+                    column--;
+                }
+                placeCursor();
+                break;
+            case 39:    // right arrow key
+                if (column < command.length) {
+                    column++;
+                }
+                placeCursor();
+                break;
+            case 13:    // enter key
+                draw();
+                enter();
+                break;
+            case 38:    // up arrow key
+                break;
+            case 40:    // down arrow key
+                break;
+            default:
+                if (event.keyCode === 32) { // space bar
+                    command += ' ';
+                }
+                command = command.slice(0,column) + event.key.toUpperCase() + command.slice(column,command.length);
+                column++;
+                draw();
+                placeCursor();
+                break;
+        }
+    }
+
+    // WAITER
+    function waiter() {
+        row++;
+        document.getElementById('display').innerHTML += '<div id="line' + row + '"><span id="waiter"></span></div>';
+        start();
+        waiting();
+    }
+
+    // WAITING ANIMATION
+    function waiting() {
+        var i = 0;
+        var waitSpin = setInterval(function () {
+            if (document.getElementById('waiter')) {
+                document.getElementById('waiter').innerHTML = wait[i];
+                i++;
+                if (i > wait.length - 1) {
+                    i = 0;
+                }
+            } else {
+                clearInterval(waitSpin);
+            }
+        }, rate);
+    }
+
+</script>
+
+</html>
+
