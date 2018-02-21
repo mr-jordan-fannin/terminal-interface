@@ -16,6 +16,7 @@
             font-size: 4vh;
         }
         div {
+            white-space: pre;
             word-wrap: break-word;
         }
     </style>
@@ -158,7 +159,7 @@
                 break;
             default:
                 if (event.keyCode === 32) { // space bar
-                    command += ' ';
+                    command += '\xa0';
                 }
                 command = command.slice(0,column) + event.key.toUpperCase() + command.slice(column,command.length);
                 column++;
@@ -195,4 +196,3 @@
 </script>
 
 </html>
-
