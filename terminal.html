@@ -9,40 +9,54 @@
             font-family: "MorePerfectDOSVGA";
             src: local(MorePerfectDOSVGA);
         }
-        html {
-            background-color: gray;
+        body {
+            background-color: #222;
             font-family: "MorePerfectDOSVGA", Arial, sans-serif;
-        }
-        #display {
-            padding: 20px;
+            font-size: 12pt;
         }
         #screen {
             background-color: black;
+            border-radius: 10px;
             color: lime;
             float: left;
-            margin: 20px;
             height: 480px;
-            width: 640px;
+            margin: 20px;
             overflow-y: auto;
+            width: 640px;
         }
         #screen:before {
-            content: '';
-            position: absolute;
-            font-size: 1px;
-            width: 640px;
-            height: 2px;
-            background: lime;
-            opacity: .2;
             animation: vline 5s linear infinite;
+            background: lime;
+            content: '';
+            font-size: 1px;
+            height: 2px;
+            opacity: .2;
+            position: absolute;
+            width: 640px;
         }
         @keyframes vline {
             0%   { top: 28px; }
             100% { top: 504px; }
         }
+        #display {
+            padding: 20px;
+        }
         .line {
-            font-size: 12pt;
             white-space: pre;
             word-wrap: break-word;
+        }
+        #tools {
+            background-color: black;
+            border-radius: 10px;
+            color: orange;
+            float: right;
+            height: 440px;
+            margin: 20px;
+            padding: 20px;
+            width: 500px;
+        }
+        #tools h2 {
+            text-align: center;
         }
     </style>
     <title>TERMINAL</title>
@@ -51,6 +65,19 @@
 <body>
     <div id="screen">
         <div id="display"></div>
+    </div>
+    <div id="tools">
+        <h2>ANDROID STATUS</h2>
+        <p>AGE: <span id="age">0</span> seconds</p>
+        <p>ENERGY: <span id="energy">100</span>%</p>
+        <p>HEALTH: <span id="health">100</span>%</p>
+        <p>TEMPERATURE: <span id="temp">50</span> celsius</p>
+        <p>DISTANCE: <span id="distance">200</span>m</p>
+        <p>SECTION: Foreward B</p>
+        <p>DECK: <span id="deck">7</span></p>
+        <p>ORIENTATION: <span id="orientation">Vertical</span></p>
+        <p>FACING: <span id="facing">90</span> degrees</p>
+        <p>ATTITUDE: Curious</p>
     </div>
 </body>
 
@@ -65,8 +92,18 @@
     const rate = 500;
     const wait = ['-','\\','|','/'];
 
+    // ANDROID PROPERTIES
+    var age = 0;
+    var energy = 100;
+    var health = 100;
+    var temp = 50;
+    var distance = 200;
+    var deck = 7;
+    var orientation = 'Vertical';
+    var facing = 90;
 
     // SETUP
+    born();
     clear();
     blinking();
 
@@ -74,6 +111,46 @@
     window.addEventListener('keypress', function(event) {
         keyboard(event);
     });
+
+    // ANDROID BIRTH
+    function born() {
+        setInterval(function () {
+            var random = Math.round(Math.random());
+            age++;
+            if (age % 10 === 0 && energy !== 0) {
+                energy--;
+            }
+            if ((deck > 1 && deck < 20) && age % 30 === 0) {
+                if (random === 1) {
+                    deck++;
+                } else {
+                    deck--;
+                }
+            }
+            if (random === 1) {
+                temp++;
+                facing -= random * 5;
+            } else {
+                temp--;
+                facing += random * 5;
+            }
+            if (Math.round(Math.random() * 10) < 2) {
+                orientation = 'Horizontal';
+                health--;
+            } else {
+                orientation = 'Vertical';
+            }
+            distance += .5;
+            document.getElementById('age').innerHTML = age;
+            document.getElementById('energy').innerHTML = energy;
+            document.getElementById('health').innerHTML = health;
+            document.getElementById('temp').innerHTML = temp;
+            document.getElementById('distance').innerHTML = distance;
+            document.getElementById('deck').innerHTML = deck;
+            document.getElementById('orientation').innerHTML = orientation;
+            document.getElementById('facing').innerHTML = facing;
+        }, 1000);
+    }
 
     // STARTING CONDITION
     function start() {
@@ -187,6 +264,7 @@
                 enter();
                 break;
             case 38:    // up arrow key
+                console.log(document.getElementById('display').scrollTop);
                 break;
             case 40:    // down arrow key
                 break;
