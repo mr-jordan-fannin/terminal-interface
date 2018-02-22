@@ -10,12 +10,37 @@
             src: local(MorePerfectDOSVGA);
         }
         html {
-            background-color: black;
-            color: #0F0;
+            background-color: gray;
             font-family: "MorePerfectDOSVGA", Arial, sans-serif;
-            font-size: 4vh;
         }
-        div {
+        #display {
+            padding: 20px;
+        }
+        #screen {
+            background-color: black;
+            color: lime;
+            float: left;
+            margin: 20px;
+            height: 480px;
+            width: 640px;
+            overflow-y: auto;
+        }
+        #screen:before {
+            content: '';
+            position: absolute;
+            font-size: 1px;
+            width: 640px;
+            height: 2px;
+            background: lime;
+            opacity: .2;
+            animation: vline 5s linear infinite;
+        }
+        @keyframes vline {
+            0%   { top: 28px; }
+            100% { top: 504px; }
+        }
+        .line {
+            font-size: 12pt;
             white-space: pre;
             word-wrap: break-word;
         }
@@ -24,7 +49,9 @@
 </head>
 
 <body>
-<div id="display"></div>
+    <div id="screen">
+        <div id="display"></div>
+    </div>
 </body>
 
 <script type="application/javascript" language="javascript">
@@ -33,8 +60,8 @@
     var row = 0;
     var column = 0;
     var command = '';
-    const fontColor = "rgb(0, 255, 0)";
-    const displayColor = "rgb(0, 0, 0)";
+    const fontColor = "lime";
+    const displayColor = "black";
     const rate = 500;
     const wait = ['-','\\','|','/'];
 
@@ -48,7 +75,7 @@
         keyboard(event);
     });
 
-    // STARTING CURSOR
+    // STARTING CONDITION
     function start() {
         command = "";
         column = 0;
@@ -57,6 +84,11 @@
     // CURSOR
     function cursor() {
         return '<span id="cursor">█</span>';
+    }
+
+    // PROMPT
+    function prompt() {
+        return '<span class="prompt">></span>';
     }
 
     // BLINKING ANIMATION
@@ -93,8 +125,8 @@
 
     // CLEAR DISPLAY
     function clear() {
-        document.getElementById('display').innerHTML = '<div id="line0"></div>';
-        document.getElementById('line0').innerHTML = cursor();
+        document.getElementById('display').innerHTML = '<div id="line0" class="line"></div>';
+        document.getElementById('line0').innerHTML = prompt() + cursor();
         row = 0;
         start();
     }
@@ -109,7 +141,7 @@
     // POST TEXT
     function post() {
         row++;
-        document.getElementById('display').innerHTML += '<div id="line' + row + '"></div>';
+        document.getElementById('display').innerHTML += '<div id="line' + row + '" class="line"></div>';
         start();
         draw();
         placeCursor();
@@ -117,12 +149,12 @@
 
     // DRAW ROW
     function draw() {
-        document.getElementById('line' + row).innerHTML = command;
+        document.getElementById('line' + row).innerHTML = prompt() + command;
     }
 
     // PLACE CURSOR
     function placeCursor() {
-        var newLine = command.slice(0, column) + cursor();
+        var newLine = prompt() + command.slice(0, column) + cursor();
         var displayView = document.getElementById('display');
         document.getElementById('line' + row).innerHTML = newLine + command.slice(column,command.length);
         displayView.scrollTop = displayView.scrollHeight;
@@ -136,6 +168,7 @@
                     command = command.substring(0, command.length - 1);
                 }
                 draw();
+                placeCursor();
                 break;
             case 37:    // left arrow key
                 if (column > 0) {
