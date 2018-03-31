@@ -10,13 +10,12 @@
 			src: url('MorePerfectDOSVGA.ttf') format('truetype');
 		}
 		body {
-			background-color: #222;
-			font-family: "MorePerfectDOSVGA";
+			background-color: #000;
+			font-family: "MorePerfectDOSVGA", Courier, monospace;
 			font-size: 12pt;
 		}
 		#screen {
 			background-color: rgb(0,15,0);
-			border-radius: 10px;
 			color: lime;
 			float: left;
 			height: 480px;
@@ -25,7 +24,7 @@
 			width: 640px;
 		}
 		#screen:before {
-			animation: vline 5s linear infinite;
+			animation: hline 5s linear infinite;
 			background: lime;
 			content: '';
 			font-size: 1px;
@@ -34,9 +33,17 @@
 			position: absolute;
 			width: 640px;
 		}
-		@keyframes vline {
+        #lines {
+            background: #000;
+            background: linear-gradient(#020 1%, black 99%);
+            background-repeat: repeat-y;
+            background-size: 100% 2px;
+            height: 480px;
+            opacity: .9;
+        }
+		@keyframes hline {
 			0%   { top: 28px; }
-			100% { top: 504px; }
+			100% { top: 507px; }
 		}
 		#display {
 			padding: 20px;
@@ -47,7 +54,6 @@
 		}
 		#android {
 			background: inherit;
-			border-radius: 10px;
 			color: orange;
 			float: right;
 			height: 440px;
@@ -75,8 +81,10 @@
 <body>
 <div id="console">
 	<div id="screen">
-		<div id="display"></div>
-	</div>
+        <div id="lines">
+		    <div id="display"></div>
+	    </div>
+    </div>
 	<div id="status">
 		<div id="android">
 			<h2>ANDROID STATUS</h2>
@@ -96,25 +104,40 @@
 
 <script type="application/javascript" language="javascript">
 
-    /**********GLOBAL VARIABLES**********/
+    // TODO: MAKE IF CONDITION TO HANDLE PUNCTUATION.
+    // TODO: MAKE CURSOR A SUPERIMPOSING RECTANGLE INSTEAD OF A CHARACTER
 
-    const version = '0.0.3';
-    // DISPLAY COMPONENTS
-    let row = 0;
-    let column = 0;
-    let command = '';
-    let commandHistory = [];
-    let historyIndex = 0;
-    const fontColor = 'rgb(0, 255, 0)';
-    const displayColor = 'rgb(0, 15, 0)';
-    const rate = 500;
-    const wait = ['-','\\','|','/'];
-    // ANDROID LOCATION
-    let xsec = 1;
-    let ysec = 1;
-    let deck = 1;
-    // SYSTEM COMMANDS
-	let systemCommands = [
+    //**********GLOBALS**********
+
+    const version = '0.0.4';
+    const grid = {
+        row: 0,
+        column: 0
+    };
+    const input = {
+        command: '',
+        history: [],
+        index: 0
+    };
+    const settings = {
+        fontColor: 'rgba(0, 255, 0, 1)',
+        displayColor: 'rgba(0, 15, 0, 0)',
+        rate: 600,
+        wait: ['-','\\','|','/'],
+        prompt: '<span class="prompt">> </span>',
+        cursor: '<span id="cursor">█</span>'
+    };
+    const android = {
+        xsec: 1,
+        ysec: 1,
+        deck: 1,
+        age: 0,
+        energy: 100,
+        health: 100,
+        temp: 50,
+        orientation: 'VERTICAL'
+    };
+	const systemCommands = [
 	    '&nbspMOVF -X: WALK X ROOM(S) TO THE FORE END OF THE SHIP.',
 		'&nbspMOVA -X: WALK X ROOM(S) TO THE AFT END OF THE SHIP.',
 		'&nbspMOVS -X: WALK X ROOM(S) TO THE STARBOARD SIDE OF THE SHIP.',
@@ -127,14 +150,47 @@
 	];
 
 
-    /**********SETUPS**********/
+    //**********SETUPS**********
 
-    born();
+    // ANDROID BIRTH
+    (() => {
+        setInterval(function () {
+            android.age++;
+            if (android.age % 10 === 0 && android.energy !== 0) {
+                android.energy--;
+            }
+            if (Math.round(Math.random() * 10) < 2) {
+                android.orientation = 'HORIZONTAL';
+                android.health--;
+            } else {
+                android.orientation = 'VERTICAL';
+            }
+            for (let property in android) {
+                if (android.hasOwnProperty(property)) {
+                    document.getElementById(property).innerHTML = android[property];
+                }
+            }
+        }, 1000);
+    })();
+
+    // BLINKER
+    (() => {
+        setInterval(function () {
+            let cursor = document.getElementById('cursor');
+            if (cursor) {
+                if (cursor.style.color === settings.displayColor) {
+                    cursor.style.color = settings.fontColor;
+                } else {
+                    cursor.style.color = settings.displayColor;
+                }
+            }
+        }, settings.rate);
+    })();
+
     clear();
-    blinker();
 
 
-    /**********LOOPS**********/
+    //**********LOOPS**********
 
     // MAIN LOOP
     window.addEventListener('keydown', function(event) {
@@ -145,143 +201,88 @@
         event.preventDefault();
     }, true);
 
-    // ANDROID BIRTH
-    function born() {
-        // ANDROID PROPERTIES
-        let age = 0;
-        let energy = 100;
-        let health = 100;
-        let temp = 50;
-        let orientation = 'VERTICAL';
-
-        setInterval(function () {
-            age++;
-            if (age % 10 === 0 && energy !== 0) {
-                energy--;
-            }
-            if (Math.round(Math.random() * 10) < 2) {
-                orientation = 'HORIZONTAL';
-                health--;
-            } else {
-                orientation = 'VERTICAL';
-            }
-            document.getElementById('age').innerHTML = age;
-            document.getElementById('energy').innerHTML = energy;
-            document.getElementById('health').innerHTML = health;
-            document.getElementById('temp').innerHTML = temp;
-            document.getElementById('orientation').innerHTML = orientation;
-        }, 1000);
-    }
-
-    // BLINKER
-    function blinker() {
-        setInterval(function () {
-            if (document.getElementById('cursor')) {
-                if (document.getElementById('cursor').style.color === displayColor) {
-                    document.getElementById('cursor').style.color = fontColor;
-                } else {
-                    document.getElementById('cursor').style.color = displayColor;
-                }
-            }
-        }, rate);
-    }
-
     // WAITER
     function waiter() {
-        row++;
-        document.getElementById('display').innerHTML += '<div id="line' + row + '"><span id="waiter"></span></div>';
-        column = 0;
+        grid.row++;
+        document.getElementById('display').innerHTML += '<div id="line' + grid.row + '"><span id="waiter"></span></div>';
+        grid.col = 0;
         let i = 0;
         let waitSpin = setInterval(function () {
             if (document.getElementById('waiter')) {
-                document.getElementById('waiter').innerHTML = wait[i];
+                document.getElementById('waiter').innerHTML = settings.wait[i];
                 i++;
-                if (i > wait.length - 1) {
+                if (i > settings.wait.length - 1) {
                     i = 0;
                 }
             } else {
                 clearInterval(waitSpin);
             }
-        }, rate);
-    }
-    
-
-    /************CHARACTERS************/
-
-    // CURSOR
-    function cursor() {
-        return '<span id="cursor">█</span>';
-    }
-
-    // PROMPT
-    function prompt() {
-        return '<span class="prompt">></span>';
+        }, settings.rate);
     }
 
 
-    /************KEYBOARD************/
+    //************KEYBOARD************
 
     // KEYBOARD LISTENER
     function keyboard(event) {
         switch (event.code) {
             case 'Backspace':
-                if (command.length > 0) {
-                    command = command.substring(0, command.length - 1);
+                if (grid.col > 0) {
+                    grid.col--;
                 }
-                document.getElementById('line' + row).innerHTML = prompt() + command;
-                placeCursor();
+                if (input.command.length > 0) {
+                    input.command = input.command.slice(0, grid.col) + input.command.slice(grid.col + 1, input.command.length);
+                }
                 break;
             case 'ArrowLeft':
-                if (column > 0) {
-                    column--;
+                if (grid.col > 0) {
+                    grid.col--;
                 }
-                placeCursor();
                 break;
             case 'ArrowRight':
-                if (column < command.length) {
-                    column++;
+                if (grid.col < input.command.length) {
+                    grid.col++;
                 }
-                placeCursor();
                 break;
             case 'Enter':
-                document.getElementById('line' + row).innerHTML = prompt() + command;
+                document.getElementById('line' + grid.row).innerHTML = settings.prompt + input.command;
                 enter();
                 break;
             case 'ArrowUp':
-                historyIndex--;
-                if (historyIndex === 0) {
-                    historyIndex = commandHistory.length;
+                input.command = input.history[input.index];
+                input.index--;
+                if (input.index < 0) {
+                    input.index = input.history.length - 1;
                 }
-                //command = commandHistory[historyIndex];
-                //document.getElementById('line' + row).innerHTML = prompt() + command;
-                //placeCursor();
+                grid.col = input.command.length;
                 break;
             case 'ArrowDown':
-                historyIndex++;
-                if (historyIndex === commandHistory.length) {
-                    historyIndex = 0;
+                input.command = input.history[input.index];
+                input.index++;
+                if (input.index === input.history.length - 1) {
+                    input.index = 0;
                 }
-                //command = commandHistory[historyIndex];
-                //document.getElementById('line' + row).innerHTML = prompt() + command;
-                //placeCursor();
+                grid.col = input.command.length;
                 break;
             case 'Space':
-                command += '\xa0';
+                input.command += ' ';
+                grid.col++;
                 break;
             default:
-                // TODO: MAKE IF CONDITION TO HANDLE SHIFT, CTRL, ALT, CAPS, ETC.
-                command = command.slice(0,column) + event.key.toUpperCase() + command.slice(column,command.length);
-                column++;
-                document.getElementById('line' + row).innerHTML = prompt() + command;
-                placeCursor();
+                if (event.code.startsWith('Key') || event.code.startsWith('Digit')) {
+                    input.command = input.command.slice(0, grid.col)
+                        + event.key.toUpperCase()
+                        + input.command.slice(grid.col, input.command.length);
+                    grid.col++;
+                }
                 break;
         }
-        console.log(event.code);
+        placeCursor();
     }
 
     // ENTER
     function enter() {
-        switch (command) {
+        switch (input.command) {
             case 'CLEAR':
                 clear();
                 break;
@@ -294,51 +295,51 @@
             default:
                 break;
         }
-        if (command.startsWith('MOV')) {
+        if (input.command.startsWith('MOV')) {
             move();
         } else {
             post();
 		}
 		logHistory();
-        document.getElementById('line' + row).scrollIntoView(false);
+        document.getElementById('line' + grid.row).scrollIntoView(false);
     }
 
     // POST TEXT
     function post() {
-        row++;
-        document.getElementById('display').innerHTML += '<div id="line' + row + '" class="line"></div>';
-        column = 0;
-        document.getElementById('line' + row).innerHTML = prompt() + command;
+        grid.row++;
+        grid.col = 0;
+        document.getElementById('display').innerHTML += '<div id="line' + grid.row + '" class="line"></div>';
+        document.getElementById('line' + grid.row).innerHTML = settings.prompt + input.command;
         placeCursor();
     }
 
     // PLACE CURSOR
     function placeCursor() {
-        let newLine = prompt() + command.slice(0, column) + cursor();
-        let displayView = document.getElementById('display');
-        document.getElementById('line' + row).innerHTML = newLine + command.slice(column,command.length);
-        displayView.scrollTop = displayView.scrollHeight;
+        document.getElementById('line' + grid.row).innerHTML = settings.prompt + input.command.slice(0, grid.col)
+            + settings.cursor
+            + input.command.slice(grid.col,input.command.length);
+        document.getElementById('display').scrollTop = document.getElementById('display').scrollHeight;
     }
 
 
-    /**********COMMANDS**********/
+    //**********COMMANDS**********
 
     // LOG HISTORY
     function logHistory() {
-        commandHistory.push(command);
-        historyIndex++;
-        command = '';
+        input.history.push(input.command);
+        input.index = input.history.length - 1;
+        input.command = '';
     }
 
     // HELP COMMAND
     function help() {
-        row++;
-        document.getElementById('display').innerHTML += '<div id="line' + row + '">ANDROID SHELL VERSION ' + version + '</div>';
-        row++;
-        document.getElementById('display').innerHTML += '<div id="line' + row + '">VALID COMMANDS:</div>';
-        for (let i = 0; i < systemCommands.length; i++) {
-            row++;
-            document.getElementById('display').innerHTML += '<div id="line' + row + '">' + systemCommands[i] + '</div>';
+        grid.row++;
+        document.getElementById('display').innerHTML += '<div id="line' + grid.row + '">ANDROID SHELL VERSION ' + version + '</div>';
+        grid.row++;
+        document.getElementById('display').innerHTML += '<div id="line' + grid.row + '">VALID COMMANDS:</div>';
+        for (let sysCommand in systemCommands) {
+            grid.row++;
+            document.getElementById('display').innerHTML += '<div id="line' + grid.row + '">' + sysCommand + '</div>';
         }
         post();
     }
@@ -346,38 +347,40 @@
     // CLEAR DISPLAY
     function clear() {
         document.getElementById('display').innerHTML = '<div id="line0" class="line"></div>';
-        document.getElementById('line0').innerHTML = prompt() + cursor();
-        row = 0;
-        column = 0;
+        document.getElementById('line0').innerHTML = settings.prompt;
+        grid.row = 0;
+        grid.col = 0;
+        placeCursor();
     }
 
     // MOVE COMMAND PARSER
     function move() {
-        switch (command.charAt(3)) {
+        let change = parseInt(input.command.charAt(6));
+        switch (input.command.charAt(3)) {
             case 'U':
-                deck += parseInt(command.charAt(6));
+                android.deck += change;
                 break;
             case 'D':
-                deck -= parseInt(command.charAt(6));
+                android.deck -= change;
                 break;
             case 'F':
-                ysec += parseInt(command.charAt(6));
+                android.ysec += change;
                 break;
             case 'A':
-                ysec -= parseInt(command.charAt(6));
+                android.ysec -= change;
                 break;
             case 'S':
-                xsec += parseInt(command.charAt(6));
+                android.xsec += change;
                 break;
             case 'P':
-                xsec -= parseInt(command.charAt(6));
+                android.xsec -= change;
                 break;
             default:
                 break;
         }
-        document.getElementById('xsec').innerHTML = xsec;
-        document.getElementById('ysec').innerHTML = ysec;
-        document.getElementById('deck').innerHTML = deck;
+        document.getElementById('xsec').innerHTML = android.xsec;
+        document.getElementById('ysec').innerHTML = android.ysec;
+        document.getElementById('deck').innerHTML = android.deck;
         post();
     }
 
