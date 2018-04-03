@@ -14,6 +14,9 @@
 			font-family: "MorePerfectDOSVGA", Courier, monospace;
 			font-size: 12pt;
 		}
+        #console {
+            width: 100%;
+        }
 		#screen {
 			background-color: rgb(0,15,0);
 			color: lime;
@@ -71,8 +74,16 @@
 			background-size: 100% 2px;
 			opacity: .9;
 		}
-		#console {
-			width: 1300px;
+		@media only screen and (max-width: 700px) {
+            #screen {
+                margin: 5%;
+                width: 95%;
+            }
+            #status {
+                float: left;
+                margin: 40%;
+                width: 95%;
+            }
 		}
 	</style>
 	<title>TERMINAL</title>
@@ -104,7 +115,6 @@
 
 <script type="application/javascript" language="javascript">
 
-    // TODO: MAKE IF CONDITION TO HANDLE PUNCTUATION.
     // TODO: MAKE CURSOR A SUPERIMPOSING RECTANGLE INSTEAD OF A CHARACTER
 
     //**********GLOBALS**********
@@ -138,16 +148,59 @@
         orientation: 'VERTICAL'
     };
 	const systemCommands = [
-	    '&nbspMOVF -X: WALK X ROOM(S) TO THE FORE END OF THE SHIP.',
-		'&nbspMOVA -X: WALK X ROOM(S) TO THE AFT END OF THE SHIP.',
-		'&nbspMOVS -X: WALK X ROOM(S) TO THE STARBOARD SIDE OF THE SHIP.',
-		'&nbspMOVP -X: WALK X ROOM(S) TO THE PORT SIDE OF THE SHIP.',
-		'&nbspMOVU -X: WALK UP X DECK(S).',
-		'&nbspMOVD -X: WALK DOWN X DECK(S).',
-		'&nbspEXAM -X: EXAMINE THE ROOM BY DEFAULT OR X TARGET OBJECT.',
-		'&nbspTAKE -X: PICK UP X TARGET OBJECT.',
-		'&nbspDIAG -X: RUN LEVEL X SELF-DIAGNOSTIC TOOL.'
+	    '&nbspMOVF X: WALK X ROOM(S) TO THE FORE END OF THE SHIP.',
+		'&nbspMOVA X: WALK X ROOM(S) TO THE AFT END OF THE SHIP.',
+		'&nbspMOVS X: WALK X ROOM(S) TO THE STARBOARD SIDE OF THE SHIP.',
+		'&nbspMOVP X: WALK X ROOM(S) TO THE PORT SIDE OF THE SHIP.',
+		'&nbspMOVU X: WALK UP X DECK(S).',
+		'&nbspMOVD X: WALK DOWN X DECK(S).',
+		'&nbspEXAM X: EXAMINE THE ROOM BY DEFAULT OR X TARGET OBJECT.',
+		'&nbspTAKE X: PICK UP X TARGET OBJECT.',
+		'&nbspDIAG X: RUN LEVEL X SELF-DIAGNOSTIC TOOL.'
 	];
+    const directory = [
+        {
+            type: "folder",
+            name: "root",
+            path: "/",
+            children: [
+                {
+                    type: "folder",
+                    name: "logs",
+                    path: "/logs",
+                    children: [
+                        {
+                            type: "folder",
+                            name: "images",
+                            path: "/logs/images",
+                            children: [
+                                {
+                                    type: "file",
+                                    name: "1.jpg",
+                                    path: "/logs/images/1.jpg"
+                                }
+                            ]
+                        },
+                        {
+                            type: "folder",
+                            name: "audio",
+                            path: "/logs/audio",
+                            children: [
+                                {
+                                    type: "file",
+                                    name: "1.mp3",
+                                    path: "/logs/images/1.mp3"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+
+                }
+            ]
+        }
+    ];
 
 
     //**********SETUPS**********
@@ -194,9 +247,6 @@
 
     // MAIN LOOP
     window.addEventListener('keydown', function(event) {
-        if (event.preventDefaulted) {
-            return;
-        }
         keyboard(event);
         event.preventDefault();
     }, true);
@@ -266,6 +316,18 @@
                 break;
             case 'Space':
                 input.command += ' ';
+                grid.col++;
+                break;
+            case 'Period':
+                input.command += '.';
+                grid.col++;
+                break;
+            case 'Minus':
+                input.command += '-';
+                grid.col++;
+                break;
+            case 'Slash':
+                input.command += '/';
                 grid.col++;
                 break;
             default:
@@ -355,32 +417,36 @@
 
     // MOVE COMMAND PARSER
     function move() {
-        let change = parseInt(input.command.charAt(6));
-        switch (input.command.charAt(3)) {
-            case 'U':
-                android.deck += change;
-                break;
-            case 'D':
-                android.deck -= change;
-                break;
-            case 'F':
-                android.ysec += change;
-                break;
-            case 'A':
-                android.ysec -= change;
-                break;
-            case 'S':
-                android.xsec += change;
-                break;
-            case 'P':
-                android.xsec -= change;
-                break;
-            default:
-                break;
-        }
-        document.getElementById('xsec').innerHTML = android.xsec;
-        document.getElementById('ysec').innerHTML = android.ysec;
-        document.getElementById('deck').innerHTML = android.deck;
+        let steps = parseInt(input.command.charAt(5));
+        // INSERT SOME TIMEOUT TO DELAY INCREMENTING TO SIMULATE WALKING TIME
+            for (let i = 0; i < steps; i++) {
+                switch (input.command.charAt(3)) {
+                    case 'U':
+                        android.deck++;
+                        break;
+                    case 'D':
+                        android.deck--;
+                        break;
+                    case 'F':
+                        android.ysec++;
+                        break;
+                    case 'A':
+                        android.ysec--;
+                        break;
+                    case 'S':
+                        android.xsec++;
+                        break;
+                    case 'P':
+                        android.xsec--;
+                        break;
+                    default:
+                        steps = 0;
+                        break;
+                }
+            }
+            document.getElementById('xsec').innerHTML = android.xsec;
+            document.getElementById('ysec').innerHTML = android.ysec;
+            document.getElementById('deck').innerHTML = android.deck;
         post();
     }
 
