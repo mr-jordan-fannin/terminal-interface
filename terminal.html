@@ -10,79 +10,83 @@
 			src: url('MorePerfectDOSVGA.ttf') format('truetype');
 		}
 		body {
-			background-color: #000;
+			background-color: rgb(0,0,0);
 			font-family: "MorePerfectDOSVGA", Courier, monospace;
-			font-size: 12pt;
+			font-size: 1em;
 		}
-        #console {
+        #workstation {
             width: 100%;
         }
-		#screen {
+
+        #terminal, #monitor {
+            height: 30em;
+            margin: 1em;
+            overflow-y: auto;
+            width: 37em;
+        }
+        #terminal:before, #monitor:before {
+            animation: hline 5s linear infinite;
+            content: '';
+            font-size: .1em;
+            height: .1em;
+            opacity: .5;
+            position: absolute;
+            width: inherit;
+        }
+        #terminal-filter, #monitor-filter {
+            height: inherit;
+            opacity: .8;
+        }
+        #console, #status {
+            padding: 1em;
+        }
+
+		#terminal {
 			background-color: rgb(0,15,0);
 			color: lime;
-			float: left;
-			height: 480px;
-			margin: 20px;
-			overflow-y: auto;
-			width: 640px;
+            float: left;
 		}
-		#screen:before {
-			animation: hline 5s linear infinite;
+		#terminal:before {
 			background: lime;
-			content: '';
-			font-size: 1px;
-			height: 1px;
-			opacity: .5;
-			position: absolute;
-			width: 640px;
 		}
-        #lines {
-            background: #000;
+        #terminal-filter {
             background: linear-gradient(#020 1%, black 99%);
-            background-repeat: repeat-y;
-            background-size: 100% 2px;
-            height: 480px;
-            opacity: .9;
         }
-		@keyframes hline {
-			0%   { top: 28px; }
-			100% { top: 507px; }
-		}
-		#display {
-			padding: 20px;
-		}
 		.line {
 			white-space: pre;
 			word-wrap: break-word;
 		}
-		#android {
-			background: inherit;
+
+		#monitor {
+			background-color: rgb(15,15,0);
 			color: orange;
 			float: right;
-			height: 440px;
-			margin: 20px;
-			padding: 20px;
-			width: 500px;
 		}
-		#android h2 {
+		#monitor:before {
+			background: orange;
+		}
+		#monitor-filter {
+            background: linear-gradient(#220 1%, black 99%);
+		}
+		#status h2 {
 			text-align: center;
 		}
-		#status {
-			background: #000;
-			background: linear-gradient(#220 1%, black 99%);
-			background-repeat: repeat-y;
-			background-size: 100% 2px;
-			opacity: .9;
+
+        #terminal-filter, #monitor-filter {
+            background-repeat: repeat-y;
+            background-size: 100% .2em;
+        }
+
+		@keyframes hline {
+			0%   { top: 25px; }
+			100% { top: 500px }
 		}
 		@media only screen and (max-width: 700px) {
-            #screen {
-                margin: 5%;
-                width: 95%;
+            #terminal {
+
             }
-            #status {
-                float: left;
-                margin: 40%;
-                width: 95%;
+            #monitor {
+
             }
 		}
 	</style>
@@ -90,74 +94,321 @@
 </head>
 
 <body>
-<div id="console">
-	<div id="screen">
-        <div id="lines">
-		    <div id="display"></div>
-	    </div>
+    <div id="workstation">
+        <div id="terminal">
+            <div id="terminal-filter">
+                <div id="console">
+                    <div id="line0" class="line"><span class="prompt">> </span><span id="cursor">█</span></div>
+                </div>
+            </div>
+        </div>
+        <div id="monitor">
+            <div id="monitor-filter">
+                <div id="status">
+                    <h2>ANDROID STATUS</h2>
+                    <p>AGE: <span id="age">0</span> SECONDS</p>
+                    <p>ENERGY: <span id="energy">100</span>%</p>
+                    <p>HEALTH: <span id="health">100</span>%</p>
+                    <p>TEMPERATURE: <span id="temp">50</span> C</p>
+                    <p>X SECTION: <span id="xsec">1</span></p>
+                    <p>Y SECTION: <span id="ysec">1</span></p>
+                    <p>DECK: <span id="deck">1</span></p>
+                    <p>ORIENTATION: <span id="orientation">VERTICAL</span></p>
+                    <p>ATTITUDE: CURIOUS</p>
+                </div>
+            </div>
+        </div>
     </div>
-	<div id="status">
-		<div id="android">
-			<h2>ANDROID STATUS</h2>
-			<p>AGE: <span id="age">0</span> SECONDS</p>
-			<p>ENERGY: <span id="energy">100</span>%</p>
-			<p>HEALTH: <span id="health">100</span>%</p>
-			<p>TEMPERATURE: <span id="temp">50</span> C</p>
-			<p>X SECTION: <span id="xsec">1</span></p>
-			<p>Y SECTION: <span id="ysec">1</span></p>
-			<p>DECK: <span id="deck">1</span></p>
-			<p>ORIENTATION: <span id="orientation">VERTICAL</span></p>
-			<p>ATTITUDE: CURIOUS</p>
-		</div>
-	</div>
-</div>
 </body>
 
 <script type="application/javascript" language="javascript">
 
     // TODO: MAKE CURSOR A SUPERIMPOSING RECTANGLE INSTEAD OF A CHARACTER
+    // TODO: FIX BACKGROUND SCROLL UP WHEN ACTIVE LINE REACHES BOTTOM OF CONSOLE
+    // TODO: FIX DIAGNOSTIC OUTPUT / CURSOR CONFLICT ISSUE
+    // TODO: SET SOME INTERVAL TO DELAY INCREMENTING IN ANDROID.WALK() TO SIMULATE WALKING TIME
 
     //**********GLOBALS**********
 
-    const version = '0.0.4';
     const grid = {
         row: 0,
-        column: 0
+        col: 0,
+        reset: function () {
+            this.row = 0;
+            this.col = 0;
+            input.command = '';
+        }
     };
     const input = {
         command: '',
         history: [],
-        index: 0
+        index: 0,
+        first: function() {
+            return input.command.slice(0, grid.col);
+        },
+        last: function() {
+            return input.command.slice(grid.col, input.command.length);
+        },
+        cycle: function(dir) {
+            if (dir === 'Up' && input.index > 0) {
+                input.index--;
+            }
+            if (dir === 'Down' && input.index < input.history.length - 1) {
+                input.index++;
+            }
+            input.command = input.history[input.index];
+            grid.col = input.command.length;
+        },
+        slide: function(dir) {
+            if (dir === 'Left' && grid.col > 0) {
+                grid.col--;
+            }
+            if (dir === 'Right' && grid.col < input.command.length) {
+                grid.col++;
+            }
+        },
+        space: function() {
+            input.command = input.first() + ' ' + input.last();
+            grid.col++;
+        },
+        back: function() {
+            if (grid.col > 0) {
+                grid.col--;
+            }
+            if (input.command.length > 0) {
+                input.command = input.first() + input.command.slice(grid.col + 1, input.command.length);
+            }
+        },
+        text: function() {
+            if (event.code.startsWith('Key') || event.code.startsWith('Digit')) {
+                input.command = input.first() + event.key.toUpperCase() + input.last();
+                grid.col++;
+            }
+        },
+        symbol: function(char) {
+            input.command += char;
+            grid.col++;
+        },
+        enter: function() {
+            settings.current().innerHTML = settings.prompt + input.command;
+            input.process();
+            input.archive();
+            settings.current().scrollIntoView(false);
+        },
+        return: function() {
+            grid.row++;
+            grid.col = 0;
+            settings.console.innerHTML += settings.clean();
+            settings.console.scrollTop = settings.console.scrollHeight;
+        },
+        archive: function() {
+            input.history.push(input.command);
+            input.index = input.history.length;
+            input.command = '';
+        },
+        process: function() {
+            switch (input.command) {
+                case 'CLEAR':
+                    commands.clear();
+                    break;
+                case 'DIAG':
+                    commands.diagnostic();
+                    break;
+                case 'HELP':
+                    commands.help();
+                    break;
+                case 'WAIT':
+                    commands.wait();
+                    break;
+                default:
+                    if (input.command.startsWith('MOVE')) {
+                        android.walk();
+                    } else {
+                        input.return();
+                    }
+                    break;
+            }
+        }
     };
     const settings = {
-        fontColor: 'rgba(0, 255, 0, 1)',
-        displayColor: 'rgba(0, 15, 0, 0)',
+        version: '0.0.9',
+        fcolor: 'rgba(0, 255, 0, 1)',
+        dcolor: 'rgba(0, 15, 0, 0)',
         rate: 600,
-        wait: ['-','\\','|','/'],
         prompt: '<span class="prompt">> </span>',
-        cursor: '<span id="cursor">█</span>'
+        cursor: '<span id="cursor">█</span>',
+        console: document.getElementById('console'),
+        current: function() {
+            return document.getElementById('line' + grid.row);
+        },
+        clean: function() {
+            return '<div id="line' + grid.row + '" class="line">' + settings.prompt + settings.cursor + '</div>';
+        }
+    };
+    const ship = {
+        decks: 20,
+        xsections: 30,
+        ysections: 50
     };
     const android = {
-        xsec: 1,
-        ysec: 1,
-        deck: 1,
-        age: 0,
-        energy: 100,
-        health: 100,
-        temp: 50,
-        orientation: 'VERTICAL'
+        stats: {
+            xsec: 1,
+            ysec: 1,
+            deck: 1,
+            age: 0,
+            energy: 100,
+            health: 100,
+            temp: 50,
+            orientation: 'VERTICAL'
+        },
+        autopilot: function() {
+            setInterval(function () {
+                android.stats.age++;
+                if (android.stats.age % 10 === 0 && android.stats.energy !== 0) {
+                    android.stats.energy--;
+                }
+                if (Math.round(Math.random() * 10) < 2) {
+                    android.stats.orientation = 'HORIZONTAL';
+                    android.stats.health--;
+                } else {
+                    android.stats.orientation = 'VERTICAL';
+                }
+                for (let property in android.stats) {
+                    if (android.stats.hasOwnProperty(property)) {
+                        document.getElementById(property).innerHTML = android.stats[property];
+                    }
+                }
+            }, 1000);
+        },
+        walk: function() {
+            const dir = input.command.charAt(5);
+            let steps = parseInt(input.command.charAt(7));
+            for (let i = 0; i < steps; i++) {
+                switch (dir) {
+                    case 'U':
+                        if (android.stats.deck < ship.decks) {
+                            android.stats.deck++;
+                        } else {
+                            grid.row++;
+                            settings.console.innerHTML += '<div id="line' + grid.row + '">YOU HAVE REACHED THE DORSAL INTERIOR HULL</div>';
+                            steps = 0;
+                        }
+                        break;
+                    case 'D':
+                        if (android.stats.deck > 1) {
+                            android.stats.deck--;
+                        } else {
+                            grid.row++;
+                            settings.console.innerHTML += '<div id="line' + grid.row + '">YOU HAVE REACHED THE VENTRAL INTERIOR HULL</div>';
+                            steps = 0;
+                        }
+                        break;
+                    case 'F':
+                        if (android.stats.ysec < ship.ysections) {
+                            android.stats.ysec++;
+                        } else {
+                            grid.row++;
+                            settings.console.innerHTML += '<div id="line' + grid.row + '">YOU HAVE REACHED THE BOW INTERIOR HULL</div>';
+                            steps = 0;
+                        }
+                        break;
+                    case 'A':
+                        if (android.stats.ysec > 1) {
+                            android.stats.ysec--;
+                        } else {
+                            grid.row++;
+                            settings.console.innerHTML += '<div id="line' + grid.row + '">YOU HAVE REACHED THE STERN INTERIOR HULL</div>';
+                            steps = 0;
+                        }
+                        break;
+                    case 'S':
+                        if (android.stats.xsec < ship.xsections) {
+                            android.stats.xsec++;
+                        } else {
+                            grid.row++;
+                            settings.console.innerHTML += '<div id="line' + grid.row + '">YOU HAVE REACHED THE STARBOARD INTERIOR HULL</div>';
+                            steps = 0;
+                        }
+                        break;
+                    case 'P':
+                        if (android.stats.xsec > 1) {
+                            android.stats.xsec--;
+                        } else {
+                            grid.row++;
+                            settings.console.innerHTML += '<div id="line' + grid.row + '">YOU HAVE REACHED THE PORT INTERIOR HULL</div>';
+                            steps = 0;
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+            document.getElementById('xsec').innerHTML = android.stats.xsec;
+            document.getElementById('ysec').innerHTML = android.stats.ysec;
+            document.getElementById('deck').innerHTML = android.stats.deck;
+            console.log(android.stats.xsec, ' ', android.stats.ysec, ' ', android.stats.deck);
+            input.return();
+        }
     };
-	const systemCommands = [
-	    '&nbspMOVF X: WALK X ROOM(S) TO THE FORE END OF THE SHIP.',
-		'&nbspMOVA X: WALK X ROOM(S) TO THE AFT END OF THE SHIP.',
-		'&nbspMOVS X: WALK X ROOM(S) TO THE STARBOARD SIDE OF THE SHIP.',
-		'&nbspMOVP X: WALK X ROOM(S) TO THE PORT SIDE OF THE SHIP.',
-		'&nbspMOVU X: WALK UP X DECK(S).',
-		'&nbspMOVD X: WALK DOWN X DECK(S).',
-		'&nbspEXAM X: EXAMINE THE ROOM BY DEFAULT OR X TARGET OBJECT.',
-		'&nbspTAKE X: PICK UP X TARGET OBJECT.',
-		'&nbspDIAG X: RUN LEVEL X SELF-DIAGNOSTIC TOOL.'
-	];
+	const commands = {
+        list: [
+            'CLEAR: CLEARS THE CONSOLE SCREEN.',
+            'DIAG: RUN SELF-DIAGNOSTIC ROUTINE.',
+            'EXAM [OBJ]: EXAMINE THE ROOM OR [OBJ] ITEM.',
+            'MOVE [DIR] [NUM]: WALK [NUM] ROOM(S) TOWARD [DIR] WITHIN THE SHIP.',
+            'TAKE [OBJ]: PICK UP [OBJ] ITEM.'
+        ],
+        clear: function() {
+            grid.reset();
+            settings.console.innerHTML = settings.clean();
+        },
+        diagnostic: function() {
+            grid.row++;
+            settings.console.innerHTML += '<div id="line' + grid.row + '"></div>';
+            let message = 'I AM FEELING FINE, THANKS. HOW ARE YOU?';
+            let i = 0;
+            let character = setInterval(function() {
+                if (i === message.length) {
+                    input.return();
+                    clearInterval(character);
+                } else {
+                    settings.current().innerHTML += message[i];
+                    i++;
+                }
+            }, 100);
+        },
+        help: function() {
+            grid.row++;
+            settings.console.innerHTML += '<div id="line' + grid.row + '">ANDROID COMMAND SHELL VERSION ' + settings.version + '</div>';
+            grid.row++;
+            settings.console.innerHTML += '<div id="line' + grid.row + 'TYPE \'HELP\' TO SEE THIS LIST.' + '"</div>';
+            grid.row++;
+            settings.console.innerHTML += '<div id="line' + grid.row + '">VALID COMMANDS:</div>';
+            for (let i = 0; i < commands.list.length; i++) {
+                grid.row++;
+                settings.console.innerHTML += '<div id="line' + grid.row + '">&nbsp' + commands.list[i] + '</div>';
+            }
+            input.return();
+        },
+        wait: function() {
+            const stages = ['-','\\','|','/'];
+            grid.row++;
+            settings.console.innerHTML += '<div id="line' + grid.row + '"><span id="waiter"></span></div>';
+            grid.col = 0;
+            let i = 0;
+            let waitSpin = setInterval(function () {
+                if (document.getElementById('waiter')) {
+                    document.getElementById('waiter').innerHTML = stages[i];
+                    i++;
+                    if (i > stages.length - 1) {
+                        i = 0;
+                    }
+                } else {
+                    clearInterval(waitSpin);
+                }
+            }, settings.rate);
+        },
+    };
     const directory = [
         {
             type: "folder",
@@ -194,261 +445,66 @@
                             ]
                         }
                     ]
-                },
-                {
-
                 }
             ]
         }
     ];
 
+    android.autopilot();
 
-    //**********SETUPS**********
-
-    // ANDROID BIRTH
-    (() => {
-        setInterval(function () {
-            android.age++;
-            if (android.age % 10 === 0 && android.energy !== 0) {
-                android.energy--;
-            }
-            if (Math.round(Math.random() * 10) < 2) {
-                android.orientation = 'HORIZONTAL';
-                android.health--;
+    // CURSOR BLINK
+    setInterval(function() {
+        let cursor = document.getElementById('cursor');
+        if (cursor) {
+            if (cursor.style.color === settings.dcolor) {
+                cursor.style.color = settings.fcolor;
             } else {
-                android.orientation = 'VERTICAL';
+                cursor.style.color = settings.dcolor;
             }
-            for (let property in android) {
-                if (android.hasOwnProperty(property)) {
-                    document.getElementById(property).innerHTML = android[property];
-                }
-            }
-        }, 1000);
-    })();
-
-    // BLINKER
-    (() => {
-        setInterval(function () {
-            let cursor = document.getElementById('cursor');
-            if (cursor) {
-                if (cursor.style.color === settings.displayColor) {
-                    cursor.style.color = settings.fontColor;
-                } else {
-                    cursor.style.color = settings.displayColor;
-                }
-            }
-        }, settings.rate);
-    })();
-
-    clear();
-
-
-    //**********LOOPS**********
+        }
+    }, settings.rate);
 
     // MAIN LOOP
     window.addEventListener('keydown', function(event) {
-        keyboard(event);
-        event.preventDefault();
-    }, true);
-
-    // WAITER
-    function waiter() {
-        grid.row++;
-        document.getElementById('display').innerHTML += '<div id="line' + grid.row + '"><span id="waiter"></span></div>';
-        grid.col = 0;
-        let i = 0;
-        let waitSpin = setInterval(function () {
-            if (document.getElementById('waiter')) {
-                document.getElementById('waiter').innerHTML = settings.wait[i];
-                i++;
-                if (i > settings.wait.length - 1) {
-                    i = 0;
-                }
-            } else {
-                clearInterval(waitSpin);
-            }
-        }, settings.rate);
-    }
-
-
-    //************KEYBOARD************
-
-    // KEYBOARD LISTENER
-    function keyboard(event) {
         switch (event.code) {
             case 'Backspace':
-                if (grid.col > 0) {
-                    grid.col--;
-                }
-                if (input.command.length > 0) {
-                    input.command = input.command.slice(0, grid.col) + input.command.slice(grid.col + 1, input.command.length);
-                }
+                input.back();
                 break;
             case 'ArrowLeft':
-                if (grid.col > 0) {
-                    grid.col--;
-                }
+                input.slide('Left');
                 break;
             case 'ArrowRight':
-                if (grid.col < input.command.length) {
-                    grid.col++;
-                }
+                input.slide('Right');
                 break;
             case 'Enter':
-                document.getElementById('line' + grid.row).innerHTML = settings.prompt + input.command;
-                enter();
+                input.enter();
                 break;
             case 'ArrowUp':
-                input.command = input.history[input.index];
-                input.index--;
-                if (input.index < 0) {
-                    input.index = input.history.length - 1;
-                }
-                grid.col = input.command.length;
+                input.cycle('Up');
                 break;
             case 'ArrowDown':
-                input.command = input.history[input.index];
-                input.index++;
-                if (input.index === input.history.length - 1) {
-                    input.index = 0;
-                }
-                grid.col = input.command.length;
+                input.cycle('Down');
                 break;
             case 'Space':
-                input.command += ' ';
-                grid.col++;
+                input.space();
                 break;
             case 'Period':
-                input.command += '.';
-                grid.col++;
+                input.symbol('.');
                 break;
             case 'Minus':
-                input.command += '-';
-                grid.col++;
+                input.symbol('-');
                 break;
             case 'Slash':
-                input.command += '/';
-                grid.col++;
+                input.symbol('/');
                 break;
             default:
-                if (event.code.startsWith('Key') || event.code.startsWith('Digit')) {
-                    input.command = input.command.slice(0, grid.col)
-                        + event.key.toUpperCase()
-                        + input.command.slice(grid.col, input.command.length);
-                    grid.col++;
-                }
+                input.text();
                 break;
         }
-        placeCursor();
-    }
-
-    // ENTER
-    function enter() {
-        switch (input.command) {
-            case 'CLEAR':
-                clear();
-                break;
-            case 'HELP':
-                help();
-                break;
-            case 'WAIT':
-                waiter();
-                break;
-            default:
-                break;
-        }
-        if (input.command.startsWith('MOV')) {
-            move();
-        } else {
-            post();
-		}
-		logHistory();
-        document.getElementById('line' + grid.row).scrollIntoView(false);
-    }
-
-    // POST TEXT
-    function post() {
-        grid.row++;
-        grid.col = 0;
-        document.getElementById('display').innerHTML += '<div id="line' + grid.row + '" class="line"></div>';
-        document.getElementById('line' + grid.row).innerHTML = settings.prompt + input.command;
-        placeCursor();
-    }
-
-    // PLACE CURSOR
-    function placeCursor() {
-        document.getElementById('line' + grid.row).innerHTML = settings.prompt + input.command.slice(0, grid.col)
-            + settings.cursor
-            + input.command.slice(grid.col,input.command.length);
-        document.getElementById('display').scrollTop = document.getElementById('display').scrollHeight;
-    }
-
-
-    //**********COMMANDS**********
-
-    // LOG HISTORY
-    function logHistory() {
-        input.history.push(input.command);
-        input.index = input.history.length - 1;
-        input.command = '';
-    }
-
-    // HELP COMMAND
-    function help() {
-        grid.row++;
-        document.getElementById('display').innerHTML += '<div id="line' + grid.row + '">ANDROID SHELL VERSION ' + version + '</div>';
-        grid.row++;
-        document.getElementById('display').innerHTML += '<div id="line' + grid.row + '">VALID COMMANDS:</div>';
-        for (let sysCommand in systemCommands) {
-            grid.row++;
-            document.getElementById('display').innerHTML += '<div id="line' + grid.row + '">' + sysCommand + '</div>';
-        }
-        post();
-    }
-
-    // CLEAR DISPLAY
-    function clear() {
-        document.getElementById('display').innerHTML = '<div id="line0" class="line"></div>';
-        document.getElementById('line0').innerHTML = settings.prompt;
-        grid.row = 0;
-        grid.col = 0;
-        placeCursor();
-    }
-
-    // MOVE COMMAND PARSER
-    function move() {
-        let steps = parseInt(input.command.charAt(5));
-        // INSERT SOME TIMEOUT TO DELAY INCREMENTING TO SIMULATE WALKING TIME
-            for (let i = 0; i < steps; i++) {
-                switch (input.command.charAt(3)) {
-                    case 'U':
-                        android.deck++;
-                        break;
-                    case 'D':
-                        android.deck--;
-                        break;
-                    case 'F':
-                        android.ysec++;
-                        break;
-                    case 'A':
-                        android.ysec--;
-                        break;
-                    case 'S':
-                        android.xsec++;
-                        break;
-                    case 'P':
-                        android.xsec--;
-                        break;
-                    default:
-                        steps = 0;
-                        break;
-                }
-            }
-            document.getElementById('xsec').innerHTML = android.xsec;
-            document.getElementById('ysec').innerHTML = android.ysec;
-            document.getElementById('deck').innerHTML = android.deck;
-        post();
-    }
+        settings.current().innerHTML = settings.prompt + input.first() + settings.cursor + input.last();
+        settings.console.scrollTop = settings.console.scrollHeight;
+        event.preventDefault();
+    }, true);
 
 </script>
 
