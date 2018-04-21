@@ -19,13 +19,13 @@
         }
 
         #terminal, #monitor {
-            height: 30em;
+            height: 40em;
             margin: 1em;
             overflow-y: auto;
-            width: 37em;
+            width: 47%;
         }
         #terminal:before, #monitor:before {
-            animation: hline 5s linear infinite;
+            animation: scanline 5s linear infinite;
             content: '';
             font-size: .1em;
             height: .1em;
@@ -51,6 +51,8 @@
 		}
         #terminal-filter {
             background: linear-gradient(#020 1%, black 99%);
+            height: 100%;
+            width: 100%;
         }
 		.line {
 			white-space: pre;
@@ -67,6 +69,7 @@
 		}
 		#monitor-filter {
             background: linear-gradient(#220 1%, black 99%);
+            width: 100%;
 		}
 		#status h2 {
 			text-align: center;
@@ -77,9 +80,15 @@
             background-size: 100% .2em;
         }
 
-		@keyframes hline {
-			0%   { top: 25px; }
-			100% { top: 500px }
+		@keyframes scanline {
+			0% {
+                top: 25px;
+                width: inherit
+            }
+			100% {
+                top: 500px;
+                width: inherit
+            }
 		}
 		@media only screen and (max-width: 700px) {
             #terminal {
@@ -125,8 +134,8 @@
 
     // TODO: MAKE CURSOR A SUPERIMPOSING RECTANGLE INSTEAD OF A CHARACTER
     // TODO: FIX BACKGROUND SCROLL UP WHEN ACTIVE LINE REACHES BOTTOM OF CONSOLE
-    // TODO: FIX DIAGNOSTIC OUTPUT / CURSOR CONFLICT ISSUE
     // TODO: SET SOME INTERVAL TO DELAY INCREMENTING IN ANDROID.WALK() TO SIMULATE WALKING TIME
+    // TODO: ADJUST SIZING FOR BETTER RESPONSIVENESS
 
     //**********GLOBALS**********
 
@@ -195,7 +204,7 @@
             input.archive();
             settings.current().scrollIntoView(false);
         },
-        return: function() {
+        newline: function() {
             grid.row++;
             grid.col = 0;
             settings.console.innerHTML += settings.clean();
@@ -224,7 +233,7 @@
                     if (input.command.startsWith('MOVE')) {
                         android.walk();
                     } else {
-                        input.return();
+                        input.newline();
                     }
                     break;
             }
@@ -279,6 +288,20 @@
                     }
                 }
             }, 1000);
+        },
+        talk: function(message) {
+            grid.row++;
+            settings.console.innerHTML += '<div id="line' + grid.row + '" class="line"></div>';
+            let i = 0;
+            let character = setInterval(function() {
+                if (i === message.length) {
+                    input.newline();
+                    clearInterval(character);
+                } else {
+                    (i === 0) ? settings.current().innerHTML = '&nbsp' + message[i] : settings.current().innerHTML += message[i];
+                    i++;
+                }
+            }, 50);
         },
         walk: function() {
             const dir = input.command.charAt(5);
@@ -347,35 +370,24 @@
             document.getElementById('ysec').innerHTML = android.stats.ysec;
             document.getElementById('deck').innerHTML = android.stats.deck;
             console.log(android.stats.xsec, ' ', android.stats.ysec, ' ', android.stats.deck);
-            input.return();
+            input.newline();
         }
     };
 	const commands = {
         list: [
             'CLEAR: CLEARS THE CONSOLE SCREEN.',
             'DIAG: RUN SELF-DIAGNOSTIC ROUTINE.',
-            'EXAM [OBJ]: EXAMINE THE ROOM OR [OBJ] ITEM.',
-            'MOVE [DIR] [NUM]: WALK [NUM] ROOM(S) TOWARD [DIR] WITHIN THE SHIP.',
-            'TAKE [OBJ]: PICK UP [OBJ] ITEM.'
+            'DROP [OBJ]: SET DOWN [OBJ] HERE.',
+            'EXAM [OBJ]: EXAMINE THE ROOM (DEFAULT) OR [OBJ].',
+            'MOVE [DIR] [NUM]: WALK [NUM] ROOMS HEADING [DIR].',
+            'TAKE [OBJ]: PICK UP AND CARRY [OBJ].'
         ],
         clear: function() {
             grid.reset();
             settings.console.innerHTML = settings.clean();
         },
         diagnostic: function() {
-            grid.row++;
-            settings.console.innerHTML += '<div id="line' + grid.row + '"></div>';
-            let message = 'I AM FEELING FINE, THANKS. HOW ARE YOU?';
-            let i = 0;
-            let character = setInterval(function() {
-                if (i === message.length) {
-                    input.return();
-                    clearInterval(character);
-                } else {
-                    settings.current().innerHTML += message[i];
-                    i++;
-                }
-            }, 100);
+            android.talk('I AM FEELING FINE, THANKS. HOW ARE YOU?');
         },
         help: function() {
             grid.row++;
@@ -388,7 +400,7 @@
                 grid.row++;
                 settings.console.innerHTML += '<div id="line' + grid.row + '">&nbsp' + commands.list[i] + '</div>';
             }
-            input.return();
+            input.newline();
         },
         wait: function() {
             const stages = ['-','\\','|','/'];
@@ -501,6 +513,14 @@
                 input.text();
                 break;
         }
+        /*
+        let chars = input.command.split('');
+        let content = settings.prompt;
+        for (let i = 0; i < chars.length; i++) {
+            content += '<span>' + chars[i] + '</span>';
+        }
+        settings.current().innerHTML = content;
+        */
         settings.current().innerHTML = settings.prompt + input.first() + settings.cursor + input.last();
         settings.console.scrollTop = settings.console.scrollHeight;
         event.preventDefault();
